@@ -7,7 +7,6 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   
-  /* 修改点：背景改为纯白，保留淡黄色狗爪 */
   html, body {
     height: 100%;
     background: #ffffff; 
@@ -15,6 +14,7 @@
     -webkit-tap-highlight-color: transparent;
     user-select: none;
     font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    /* 纯白背景 + 淡黄色狗爪印 */
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='%23f7e8b0' opacity='0.8'%3E%3Ccircle cx='60' cy='70' r='14'/%3E%3Ccircle cx='36' cy='46' r='9'/%3E%3Ccircle cx='60' cy='38' r='9'/%3E%3Ccircle cx='84' cy='46' r='9'/%3E%3C/g%3E%3C/svg%3E");
     background-size: 110px 110px;
     display: grid;
@@ -96,12 +96,22 @@
     display: flex; gap: 20px; z-index: 999;
   }
   #choice.hidden { display: none; }
-  #choice button {
-    padding: 12px 32px; font-size: 16px; border: 2px solid #333;
+  
+  /* 结局返回按钮 */
+  #return-box {
+    position: fixed; bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    left: 50%; transform: translateX(-50%);
+    display: flex; gap: 20px; z-index: 999;
+  }
+  #return-box.hidden { display: none; }
+
+  /* 通用按钮样式 */
+  #choice button, #return-box button {
+    padding: 12px 24px; font-size: 15px; border: 2px solid #333;
     border-radius: 12px; background: #fff; color: #333; cursor: pointer;
     box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: background 0.2s, transform 0.1s; font-family: inherit;
   }
-  #choice button:active { transform: scale(0.95); background: #f0f0f0; }
+  #choice button:active, #return-box button:active { transform: scale(0.95); background: #f0f0f0; }
 </style>
 </head>
 <body>
@@ -114,9 +124,17 @@
   <div id="text-layer"></div>
   <div id="hint">点击角色头部</div>
   <div id="progress"></div>
+  
+  <!-- 好与不好的选项 -->
   <div id="choice" class="hidden">
     <button id="btn-good">好</button>
     <button id="btn-bad">不好</button>
+  </div>
+
+  <!-- 结局返回选项 -->
+  <div id="return-box" class="hidden">
+    <button id="btn-back-start">返回开始</button>
+    <button id="btn-back-choice">返回选择</button>
   </div>
 </div>
 
@@ -131,8 +149,11 @@
   const hint = document.getElementById('hint');
   const progressEl = document.getElementById('progress');
   const choiceBox = document.getElementById('choice');
+  const returnBox = document.getElementById('return-box');
   const btnGood = document.getElementById('btn-good');
   const btnBad = document.getElementById('btn-bad');
+  const btnBackStart = document.getElementById('btn-back-start');
+  const btnBackChoice = document.getElementById('btn-back-choice');
 
   let phase = 'start';
   let clickCount = 0;
@@ -199,7 +220,10 @@
 
   function showChoice() { choiceBox.classList.remove('hidden'); }
   function hideChoice() { choiceBox.classList.add('hidden'); }
+  function showReturnBox() { returnBox.classList.remove('hidden'); }
+  function hideReturnBox() { returnBox.classList.add('hidden'); }
   function hideHint() { hint.classList.add('hidden'); }
+  function showHint() { hint.classList.remove('hidden'); }
 
   function updateProgress(current, total, label) {
     progressEl.textContent = label + ' (' + current + '/' + total + ')';
@@ -207,13 +231,58 @@
   }
   function hideProgress() { progressEl.classList.remove('show'); }
 
-  // 核心点击逻辑
-  function handleClick(e) {
-    if (e) e.preventDefault();
-    if (phase === 'choice') return;
+  // 重置到开始状态
+  function resetToStart() {
+    phase = 'start'; clickCount = 0; afterClickCount = 0;
+    setImage(1); setDialog('');
+    hideChoice(); hideReturnBox(); hideProgress();
+    showHint();
+  }
 
+  // 重置到选择状态
+  function resetToChoice() {
+    phase = 'choice'; clickCount = 0; afterClickCount = 0;
+    setImage(6); setDialog('乖孩子，别点了');
+    hideReturnBox(); showChoice(); hideProgress();
+    hideHint();
+  }
+
+  // ---------- 按下（触发图片变为“点击态”） ----------
+  function handlePress(e) {
+    if (e) e.preventDefault();
+    if (phase === 'choice' || phase === 'final_good' || phase === 'final_bad') return;
+
+    // 音效、震动、缩放、功德文字
     initAudio(); playWoodfish(); vibrate(); triggerScale(); showMerit();
 
+    // 根据阶段切换为“点击时的形象”
+    if (phase === 'phase15') {
+      setImage(3); setDialog('怎么又点……');
+    } else if (phase === 'good_after' || phase === 'bad_after') {
+      setImage(8); setDialog('嗯……');
+    } else if (phase === 'phase25') {
+      setImage(5);
+    }
+  }
+
+  // ---------- 松开（恢复图片并推进剧情） ----------
+  function handleRelease(e) {
+    if (e) e.preventDefault();
+    if (phase === 'choice' || phase === 'final_good' || phase === 'final_bad') return;
+
+    // 根据阶段恢复为“不点击时的形象”
+    if (phase === 'phase15') {
+      setImage(2); setDialog('');
+    } else if (phase === 'good_after' || phase === 'bad_after') {
+      setImage(7); setDialog('');
+    }
+
+    // 推进剧情逻辑（原来在 click 里的逻辑）
+    advancePhase();
+  }
+
+  // ---------- 核心剧情推进 ----------
+  function advancePhase() {
     switch (phase) {
       case 'start':
         clickCount++;
@@ -226,10 +295,6 @@
         break;
 
       case 'phase15':
-        setImage(3); setDialog('怎么又点……');
-        setTimeout(() => {
-          if (phase === 'phase15') { setImage(2); setDialog(''); }
-        }, 400);
         clickCount++;
         updateProgress(clickCount, 10, '还需点击');
         if (clickCount >= 10) {
@@ -239,27 +304,15 @@
         break;
 
       case 'phase25':
-        setImage(5);
+        // 松开时触发延时，变为6.jpg并弹出选项
         setTimeout(() => {
           setImage(6); setDialog('乖孩子，别点了');
           showChoice(); phase = 'choice';
-        }, 600);
-        break;
-
-      case 'good_idle':
-        phase = 'good_after'; afterClickCount = 0;
-        setImage(8); setDialog('嗯……');
-        setTimeout(() => {
-          if (phase === 'good_after') { setImage(7); setDialog(''); }
-        }, 400);
+        }, 200);
         break;
 
       case 'good_after':
       case 'bad_after':
-        setImage(8); setDialog('嗯……');
-        setTimeout(() => {
-          if (phase === 'good_after' || phase === 'bad_after') { setImage(7); setDialog(''); }
-        }, 400);
         afterClickCount++;
         updateProgress(afterClickCount, 10, '还需点击');
         if (afterClickCount >= 10) {
@@ -274,14 +327,18 @@
         } else if (choiceResult === 'bad') {
           phase = 'final_bad'; setImage(6); setDialog('坏孩子……你没有心');
         }
+        // 显示返回按钮
+        showReturnBox();
         break;
       default: break;
     }
   }
 
+  // ---------- 选项按钮事件 ----------
   btnGood.addEventListener('click', function () {
     choiceResult = 'good'; hideChoice(); phase = 'good_idle';
     setImage(6); setDialog('乖孩子……');
+    // 如果不点击，就保持这个状态
   });
 
   btnBad.addEventListener('click', function () {
@@ -290,8 +347,19 @@
     setTimeout(() => { if (phase === 'bad_after') { setImage(7); setDialog(''); } }, 400);
   });
 
-  // 绑定事件（click 最适合手机，响应更准）
-  character.addEventListener('click', handleClick);
+  // ---------- 返回按钮事件 ----------
+  btnBackStart.addEventListener('click', function () {
+    resetToStart();
+  });
+
+  btnBackChoice.addEventListener('click', function () {
+    resetToChoice();
+  });
+
+  // ---------- 事件绑定：按下和松开 ----------
+  character.addEventListener('pointerdown', handlePress);
+  character.addEventListener('pointerup', handleRelease);
+  character.addEventListener('pointercancel', handleRelease); // 防止手指滑出屏幕导致状态卡住
   character.addEventListener('contextmenu', function (e) { e.preventDefault(); });
 
   // 预加载 1-9 的所有图片
