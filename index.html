@@ -6,169 +6,102 @@
 <title>功德木鱼 · 狗爪版</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-
+  
+  /* 修改点：背景改为纯白，保留淡黄色狗爪 */
   html, body {
     height: 100%;
-    background: #ffffff;
+    background: #ffffff; 
     overflow: hidden;
     -webkit-tap-highlight-color: transparent;
     user-select: none;
     font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
-
-    /* 淡黄色狗爪印背景 */
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='%23f7e8b0' opacity='0.6'%3E%3Ccircle cx='60' cy='70' r='14'/%3E%3Ccircle cx='36' cy='46' r='9'/%3E%3Ccircle cx='60' cy='38' r='9'/%3E%3Ccircle cx='84' cy='46' r='9'/%3E%3C/g%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='%23f7e8b0' opacity='0.8'%3E%3Ccircle cx='60' cy='70' r='14'/%3E%3Ccircle cx='36' cy='46' r='9'/%3E%3Ccircle cx='60' cy='38' r='9'/%3E%3Ccircle cx='84' cy='46' r='9'/%3E%3C/g%3E%3C/svg%3E");
     background-size: 110px 110px;
-  }
-
-  #app {
-    position: relative;
-    width: 100%;
-    height: 100%;
     display: grid;
     place-items: center;
-    cursor: pointer;
   }
 
-  /* 角色容器 */
+  #app { position: relative; width: 100%; height: 100%; display: grid; place-items: center; cursor: pointer; }
+  
   #character {
     position: relative;
     width: min(65vw, 320px);
     height: min(65vw, 320px);
-    display: grid;
-    place-items: center;
+    display: grid; place-items: center;
     transition: transform 0.15s ease, width 0.25s ease, height 0.25s ease;
   }
-
+  
   /* 2~9.jpg 放大显示 */
-  #character.enlarged {
-    width: min(78vw, 380px);
-    height: min(78vw, 380px);
-  }
-
+  #character.enlarged { width: min(78vw, 380px); height: min(78vw, 380px); }
+  
   #character img {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    pointer-events: none;
-    -webkit-user-drag: none;
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: contain; pointer-events: none; -webkit-user-drag: none;
   }
-
+  
   /* 点击缩放动画 */
-  #character.clicked {
-    animation: clickScale 0.2s ease;
-  }
+  #character.clicked { animation: clickScale 0.2s ease; }
   @keyframes clickScale {
-    0%   { transform: scale(1); }
-    50%  { transform: scale(0.88); }
-    100% { transform: scale(1); }
+    0% { transform: scale(1); } 50% { transform: scale(0.88); } 100% { transform: scale(1); }
   }
 
   /* 对话框 */
   #dialog {
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    margin-bottom: 12px;
-    padding: 10px 18px;
-    background: #f0f0f0;
-    border: 2px solid #333;
-    border-radius: 16px;
-    color: #222;
-    font-size: 15px;
-    line-height: 1.4;
-    white-space: nowrap;
-    max-width: 80vw;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+    margin-bottom: 12px; padding: 10px 18px;
+    background: #f0f0f0; border: 2px solid #333; border-radius: 16px;
+    color: #222; font-size: 15px; line-height: 1.4; white-space: nowrap;
+    max-width: 80vw; overflow: hidden; text-overflow: ellipsis;
     box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    transition: opacity 0.15s;
-    pointer-events: none;
-    z-index: 10;
+    pointer-events: none; z-index: 10; transition: opacity 0.15s;
   }
-
-  #dialog.hidden {
-    display: none;
-  }
+  #dialog.hidden { display: none; }
 
   /* 功德文字层 */
-  #text-layer {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    overflow: visible;
-  }
-
+  #text-layer { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
   .merit-text {
-    position: absolute;
-    left: 50%;
-    top: 20%;
-    transform: translateX(-50%);
-    font-size: 20px;
-    font-weight: 700;
-    color: #d4a017;
+    position: absolute; left: 50%; top: 15%; transform: translateX(-50%);
+    font-size: 20px; font-weight: 700; color: #d4a017;
     text-shadow: 0 2px 6px rgba(255,255,255,0.9);
-    white-space: nowrap;
-    pointer-events: none;
+    white-space: nowrap; pointer-events: none;
     animation: floatUp 1s ease-out forwards;
   }
-
   @keyframes floatUp {
-    0%   { opacity: 0; transform: translate(-50%, 0) scale(0.8); }
-    20%  { opacity: 1; transform: translate(-50%, -10px) scale(1.05); }
-    60%  { opacity: 1; transform: translate(-50%, -40px) scale(1); }
+    0% { opacity: 0; transform: translate(-50%, 0) scale(0.8); }
+    20% { opacity: 1; transform: translate(-50%, -10px) scale(1.05); }
+    60% { opacity: 1; transform: translate(-50%, -40px) scale(1); }
     100% { opacity: 0; transform: translate(-50%, -80px) scale(0.95); }
   }
 
-  /* 提示文字 */
+  /* 顶部提示 */
   #hint {
-    position: absolute;
-    bottom: -40px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 14px;
-    color: #aaa;
-    letter-spacing: 0.1em;
-    pointer-events: none;
-    white-space: nowrap;
-    transition: opacity 0.3s;
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    font-size: 14px; color: #aaa; letter-spacing: 0.1em;
+    pointer-events: none; white-space: nowrap; transition: opacity 0.3s; z-index: 100;
   }
-  #hint.hidden {
-    opacity: 0;
+  #hint.hidden { opacity: 0; }
+
+  /* 进度提示 */
+  #progress {
+    position: fixed; top: 50px; left: 50%; transform: translateX(-50%);
+    font-size: 12px; color: #d4a017; letter-spacing: 0.05em;
+    pointer-events: none; white-space: nowrap; z-index: 100; opacity: 0; transition: opacity 0.2s;
   }
+  #progress.show { opacity: 1; }
 
-  /* 选项按钮：固定在屏幕底部，确保任何手机都能看到 */
-#choice {
-  position: fixed;
-  bottom: calc(80px + env(safe-area-inset-bottom, 0px)); /* 适配底部安全区 */
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 20px;
-  z-index: 999; /* 确保在最上层 */
-}
-#choice.hidden {
-  display: none;
-}
-#choice button {
-  padding: 12px 32px; /* 稍微加大按钮 */
-  font-size: 16px;
-  border: 2px solid #333;
-  border-radius: 12px;
-  background: #fff;
-  color: #333;
-  cursor: pointer;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1); /* 加一点阴影，更显眼 */
-  transition: background 0.2s, transform 0.1s;
-  font-family: inherit;
-}
-#choice button:active {
-  transform: scale(0.95);
-  background: #f0f0f0;
-
-    
+  /* 选项按钮：固定在屏幕底部 */
+  #choice {
+    position: fixed; bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    left: 50%; transform: translateX(-50%);
+    display: flex; gap: 20px; z-index: 999;
+  }
+  #choice.hidden { display: none; }
+  #choice button {
+    padding: 12px 32px; font-size: 16px; border: 2px solid #333;
+    border-radius: 12px; background: #fff; color: #333; cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: background 0.2s, transform 0.1s; font-family: inherit;
+  }
+  #choice button:active { transform: scale(0.95); background: #f0f0f0; }
 </style>
 </head>
 <body>
@@ -180,6 +113,7 @@
   </div>
   <div id="text-layer"></div>
   <div id="hint">点击角色头部</div>
+  <div id="progress"></div>
   <div id="choice" class="hidden">
     <button id="btn-good">好</button>
     <button id="btn-bad">不好</button>
@@ -195,69 +129,44 @@
   const dialog = document.getElementById('dialog');
   const textLayer = document.getElementById('text-layer');
   const hint = document.getElementById('hint');
+  const progressEl = document.getElementById('progress');
   const choiceBox = document.getElementById('choice');
   const btnGood = document.getElementById('btn-good');
   const btnBad = document.getElementById('btn-bad');
 
-  // 状态变量
   let phase = 'start';
   let clickCount = 0;
   let afterClickCount = 0;
   let choiceResult = '';
-
-  // 音频上下文
   let audioCtx = null;
 
+  // 播放木鱼音效
   function initAudio() {
-    if (!audioCtx) {
-      try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
-    }
+    if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
     if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
   }
-
   function playWoodfish() {
     if (!audioCtx) return;
     const now = audioCtx.currentTime;
-
-    // 主音
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(1100, now);
-    osc.frequency.exponentialRampToValueAtTime(600, now + 0.07);
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.5, now + 0.005);
+    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+    osc.type = 'triangle'; osc.frequency.setValueAtTime(1100, now); osc.frequency.exponentialRampToValueAtTime(600, now + 0.07);
+    gain.gain.setValueAtTime(0.0001, now); gain.gain.exponentialRampToValueAtTime(0.5, now + 0.005);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
-    osc.connect(gain); gain.connect(audioCtx.destination);
-    osc.start(now); osc.stop(now + 0.15);
-
-    // 低音共鸣
-    const osc2 = audioCtx.createOscillator();
-    const gain2 = audioCtx.createGain();
-    osc2.type = 'sine';
-    osc2.frequency.setValueAtTime(280, now);
-    osc2.frequency.exponentialRampToValueAtTime(160, now + 0.05);
-    gain2.gain.setValueAtTime(0.0001, now);
-    gain2.gain.exponentialRampToValueAtTime(0.2, now + 0.004);
+    osc.connect(gain); gain.connect(audioCtx.destination); osc.start(now); osc.stop(now + 0.15);
+    
+    const osc2 = audioCtx.createOscillator(); const gain2 = audioCtx.createGain();
+    osc2.type = 'sine'; osc2.frequency.setValueAtTime(280, now); osc2.frequency.exponentialRampToValueAtTime(160, now + 0.05);
+    gain2.gain.setValueAtTime(0.0001, now); gain2.gain.exponentialRampToValueAtTime(0.2, now + 0.004);
     gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
-    osc2.connect(gain2); gain2.connect(audioCtx.destination);
-    osc2.start(now); osc2.stop(now + 0.1);
+    osc2.connect(gain2); gain2.connect(audioCtx.destination); osc2.start(now); osc2.stop(now + 0.1);
   }
+  function vibrate() { if (navigator.vibrate) navigator.vibrate(40); }
 
-  function vibrate() {
-    if (navigator.vibrate) {
-      navigator.vibrate(40);
-    }
-  }
-
-  // 设置图片，同时根据编号调整是否放大
+  // 设置图片
   function setImage(num) {
     mainImg.src = num + '.jpg';
-    if (num >= 2 && num <= 9) {
-      character.classList.add('enlarged');
-    } else {
-      character.classList.remove('enlarged');
-    }
+    if (num >= 2 && num <= 9) character.classList.add('enlarged');
+    else character.classList.remove('enlarged');
   }
 
   // 设置对话框
@@ -282,159 +191,116 @@
   // 显示功德+1
   function showMerit() {
     const el = document.createElement('div');
-    el.className = 'merit-text';
-    el.textContent = '功德 +1';
+    el.className = 'merit-text'; el.textContent = '功德 +1';
     el.style.marginLeft = (Math.random() * 40 - 20) + 'px';
     textLayer.appendChild(el);
     setTimeout(() => el.remove(), 1000);
   }
 
-  // 显示/隐藏选项
   function showChoice() { choiceBox.classList.remove('hidden'); }
   function hideChoice() { choiceBox.classList.add('hidden'); }
-
-  // 隐藏提示
   function hideHint() { hint.classList.add('hidden'); }
 
-  // 处理点击（按下）
-  function handlePress(e) {
-    if (phase === 'choice') return; // 选项阶段不处理点击
+  function updateProgress(current, total, label) {
+    progressEl.textContent = label + ' (' + current + '/' + total + ')';
+    progressEl.classList.add('show');
+  }
+  function hideProgress() { progressEl.classList.remove('show'); }
 
-    // 音效、震动、缩放、功德文字
-    initAudio();
-    playWoodfish();
-    vibrate();
-    triggerScale();
-    showMerit();
+  // 核心点击逻辑
+  function handleClick(e) {
+    if (e) e.preventDefault();
+    if (phase === 'choice') return;
+
+    initAudio(); playWoodfish(); vibrate(); triggerScale(); showMerit();
 
     switch (phase) {
       case 'start':
         clickCount++;
+        updateProgress(clickCount, 15, '还需点击');
         if (clickCount >= 15) {
-          phase = 'phase15';
-          setImage(2);
-          setDialog('再点，我的脑袋就要坏了');
-          hideHint();
+          phase = 'phase15'; setImage(2); setDialog('再点，我的脑袋就要坏了');
+          hideHint(); hideProgress();
           clickCount = 0;
         }
         break;
 
       case 'phase15':
-        setImage(3);
-        setDialog('怎么又点……');
+        setImage(3); setDialog('怎么又点……');
         setTimeout(() => {
-          if (phase === 'phase15') {
-            setImage(2);
-            setDialog('');
-          }
-        }, 300);
-
+          if (phase === 'phase15') { setImage(2); setDialog(''); }
+        }, 400);
         clickCount++;
+        updateProgress(clickCount, 10, '还需点击');
         if (clickCount >= 10) {
-          phase = 'phase25';
-          setImage(4);
-          setDialog('我的呆毛都乱了');
-          clickCount = 0;
+          phase = 'phase25'; setImage(4); setDialog('我的呆毛都乱了');
+          hideProgress(); clickCount = 0;
         }
         break;
 
       case 'phase25':
         setImage(5);
         setTimeout(() => {
-          setImage(6);
-          setDialog('乖孩子，别点了');
-          showChoice();
-          phase = 'choice';
-        }, 100);
+          setImage(6); setDialog('乖孩子，别点了');
+          showChoice(); phase = 'choice';
+        }, 600);
         break;
 
       case 'good_idle':
-        phase = 'good_after';
-        afterClickCount = 0;
-        setImage(8);
-        setDialog('嗯……');
+        phase = 'good_after'; afterClickCount = 0;
+        setImage(8); setDialog('嗯……');
         setTimeout(() => {
-          if (phase === 'good_after') {
-            setImage(7);
-            setDialog('');
-          }
-        }, 300);
+          if (phase === 'good_after') { setImage(7); setDialog(''); }
+        }, 400);
         break;
 
       case 'good_after':
       case 'bad_after':
-        setImage(8);
-        setDialog('嗯……');
+        setImage(8); setDialog('嗯……');
         setTimeout(() => {
-          if (phase === 'good_after' || phase === 'bad_after') {
-            setImage(7);
-            setDialog('');
-          }
-        }, 300);
-
+          if (phase === 'good_after' || phase === 'bad_after') { setImage(7); setDialog(''); }
+        }, 400);
         afterClickCount++;
+        updateProgress(afterClickCount, 10, '还需点击');
         if (afterClickCount >= 10) {
-          phase = 'after_10';
-          setImage(9);
-          setDialog('诶……');
-          afterClickCount = 0;
+          phase = 'after_10'; setImage(9); setDialog('诶……');
+          hideProgress(); afterClickCount = 0;
         }
         break;
 
       case 'after_10':
         if (choiceResult === 'good') {
-          phase = 'final_good';
-          setImage(6);
-          setDialog('说话不算数……坏孩子……');
+          phase = 'final_good'; setImage(6); setDialog('说话不算数……坏孩子……');
         } else if (choiceResult === 'bad') {
-          phase = 'final_bad';
-          setImage(6);
-          setDialog('坏孩子……你没有心');
+          phase = 'final_bad'; setImage(6); setDialog('坏孩子……你没有心');
         }
         break;
-
-      default:
-        // final 状态继续点击动画，但图片和文字不变
-        break;
+      default: break;
     }
   }
 
-  // 选择“好”
   btnGood.addEventListener('click', function () {
-    choiceResult = 'good';
-    hideChoice();
-    phase = 'good_idle';
-    setImage(6);
-    setDialog('乖孩子……');
+    choiceResult = 'good'; hideChoice(); phase = 'good_idle';
+    setImage(6); setDialog('乖孩子……');
   });
 
-  // 选择“不好”
   btnBad.addEventListener('click', function () {
-    choiceResult = 'bad';
-    hideChoice();
-    phase = 'bad_after';
-    afterClickCount = 0;
-    setImage(8);
-    setDialog('嗯……');
-    setTimeout(() => {
-      if (phase === 'bad_after') {
-        setImage(7);
-        setDialog('');
-      }
-    }, 300);
+    choiceResult = 'bad'; hideChoice(); phase = 'bad_after'; afterClickCount = 0;
+    setImage(8); setDialog('嗯……');
+    setTimeout(() => { if (phase === 'bad_after') { setImage(7); setDialog(''); } }, 400);
   });
 
-  character.addEventListener('pointerdown', function (e) {
-    e.preventDefault();
-    handlePress(e);
-  });
+  // 绑定事件（click 最适合手机，响应更准）
+  character.addEventListener('click', handleClick);
+  character.addEventListener('contextmenu', function (e) { e.preventDefault(); });
 
-  character.addEventListener('contextmenu', function (e) {
-    e.preventDefault();
-  });
+  // 预加载 1-9 的所有图片
+  for (let i = 1; i <= 9; i++) {
+    const img = new Image();
+    img.src = i + '.jpg';
+  }
 
 })();
 </script>
-
 </body>
-  </html>
+</html>
