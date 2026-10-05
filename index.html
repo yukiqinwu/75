@@ -89,7 +89,7 @@
   }
   #progress.show { opacity: 1; }
 
-  /* 选项按钮：固定在屏幕底部 */
+  /* 选项按钮 */
   #choice {
     position: fixed; bottom: calc(80px + env(safe-area-inset-bottom, 0px));
     left: 50%; transform: translateX(-50%);
@@ -97,7 +97,7 @@
   }
   #choice.hidden { display: none; }
   
-  /* 结局返回按钮 */
+  /* 结局/停滞状态的返回按钮 */
   #return-box {
     position: fixed; bottom: calc(80px + env(safe-area-inset-bottom, 0px));
     left: 50%; transform: translateX(-50%);
@@ -105,7 +105,7 @@
   }
   #return-box.hidden { display: none; }
 
-  /* 通用按钮样式 */
+  /* 按钮通用样式 */
   #choice button, #return-box button {
     padding: 12px 24px; font-size: 15px; border: 2px solid #333;
     border-radius: 12px; background: #fff; color: #333; cursor: pointer;
@@ -125,13 +125,11 @@
   <div id="hint">点击角色头部</div>
   <div id="progress"></div>
   
-  <!-- 好与不好的选项 -->
   <div id="choice" class="hidden">
     <button id="btn-good">好</button>
     <button id="btn-bad">不好</button>
   </div>
 
-  <!-- 结局返回选项 -->
   <div id="return-box" class="hidden">
     <button id="btn-back-start">返回开始</button>
     <button id="btn-back-choice">返回选择</button>
@@ -160,6 +158,7 @@
   let afterClickCount = 0;
   let choiceResult = '';
   let audioCtx = null;
+  let restoreTimer = null;
 
   // 播放木鱼音效
   function initAudio() {
@@ -231,106 +230,99 @@
   }
   function hideProgress() { progressEl.classList.remove('show'); }
 
-  // 重置到开始状态
+  // 重置到开始
   function resetToStart() {
+    if (restoreTimer) clearTimeout(restoreTimer);
     phase = 'start'; clickCount = 0; afterClickCount = 0;
     setImage(1); setDialog('');
     hideChoice(); hideReturnBox(); hideProgress();
     showHint();
   }
 
-  // 重置到选择状态
+  // 重置到选择
   function resetToChoice() {
+    if (restoreTimer) clearTimeout(restoreTimer);
     phase = 'choice'; clickCount = 0; afterClickCount = 0;
     setImage(6); setDialog('乖孩子，别点了');
     hideReturnBox(); showChoice(); hideProgress();
     hideHint();
   }
 
-  // ---------- 按下（触发图片变为“点击态”） ----------
+  // ---------- 核心：按下（长按保持点击状态） ----------
   function handlePress(e) {
     if (e) e.preventDefault();
     if (phase === 'choice' || phase === 'final_good' || phase === 'final_bad') return;
 
-    // 音效、震动、缩放、功德文字
+    if (restoreTimer) { clearTimeout(restoreTimer); restoreTimer = null; }
+
+    // 只要开始点击，就隐藏返回键
+    hideReturnBox();
+
     initAudio(); playWoodfish(); vibrate(); triggerScale(); showMerit();
 
-    // 根据阶段切换为“点击时的形象”
     if (phase === 'phase15') {
       setImage(3); setDialog('怎么又点……');
     } else if (phase === 'good_after' || phase === 'bad_after') {
       setImage(8); setDialog('嗯……');
     } else if (phase === 'phase25') {
       setImage(5);
+    } else if (phase === 'after_10') {
+      setImage(9); setDialog('诶……');
     }
   }
 
-  // ---------- 松开（恢复图片并推进剧情） ----------
+  // ---------- 核心：松开（恢复常态并推进剧情） ----------
   function handleRelease(e) {
     if (e) e.preventDefault();
     if (phase === 'choice' || phase === 'final_good' || phase === 'final_bad') return;
 
-    // 根据阶段恢复为“不点击时的形象”
+    // 松开后，延迟 1.5 秒恢复“不点击时的形象”
     if (phase === 'phase15') {
-      setImage(2); setDialog('');
-    } else if (phase === 'good_after' || phase === 'bad_after') {
-      setImage(7); setDialog('');
-    }
-
-    // 推进剧情逻辑（原来在 click 里的逻辑）
-    advancePhase();
-  }
-
-  // ---------- 核心剧情推进 ----------
-  function advancePhase() {
-    switch (phase) {
-      case 'start':
-        clickCount++;
-        updateProgress(clickCount, 15, '还需点击');
-        if (clickCount >= 15) {
-          phase = 'phase15'; setImage(2); setDialog('再点，我的脑袋就要坏了');
-          hideHint(); hideProgress();
-          clickCount = 0;
-        }
-        break;
-
-      case 'phase15':
-        clickCount++;
-        updateProgress(clickCount, 10, '还需点击');
-        if (clickCount >= 10) {
-          phase = 'phase25'; setImage(4); setDialog('我的呆毛都乱了');
-          hideProgress(); clickCount = 0;
-        }
-        break;
-
-      case 'phase25':
-        // 松开时触发延时，变为6.jpg并弹出选项
-        setTimeout(() => {
+      restoreTimer = setTimeout(() => {
+        if (phase === 'phase15') { setImage(2); setDialog(''); }
+      }, 1500);
+      clickCount++;
+      updateProgress(clickCount, 10, '还需点击');
+      if (clickCount >= 10) {
+        phase = 'phase25'; setImage(4); setDialog('我的呆毛都乱了');
+        hideProgress(); clickCount = 0;
+      }
+    } 
+    else if (phase === 'phase25') {
+      restoreTimer = setTimeout(() => {
+        if (phase === 'phase25') {
           setImage(6); setDialog('乖孩子，别点了');
           showChoice(); phase = 'choice';
-        }, 200);
-        break;
-
-      case 'good_after':
-      case 'bad_after':
-        afterClickCount++;
-        updateProgress(afterClickCount, 10, '还需点击');
-        if (afterClickCount >= 10) {
-          phase = 'after_10'; setImage(9); setDialog('诶……');
-          hideProgress(); afterClickCount = 0;
         }
-        break;
-
-      case 'after_10':
-        if (choiceResult === 'good') {
-          phase = 'final_good'; setImage(6); setDialog('说话不算数……坏孩子……');
-        } else if (choiceResult === 'bad') {
-          phase = 'final_bad'; setImage(6); setDialog('坏孩子……你没有心');
-        }
-        // 显示返回按钮
-        showReturnBox();
-        break;
-      default: break;
+      }, 1500);
+    }
+    else if (phase === 'good_after' || phase === 'bad_after') {
+      restoreTimer = setTimeout(() => {
+        if (phase === 'good_after' || phase === 'bad_after') { setImage(7); setDialog(''); }
+      }, 1500);
+      afterClickCount++;
+      updateProgress(afterClickCount, 10, '还需点击');
+      if (afterClickCount >= 10) {
+        phase = 'after_10'; setImage(9); setDialog('诶……');
+        hideProgress(); afterClickCount = 0;
+      }
+    }
+    else if (phase === 'after_10') {
+      if (choiceResult === 'good') {
+        phase = 'final_good'; setImage(6); setDialog('说话不算数……坏孩子……');
+      } else if (choiceResult === 'bad') {
+        phase = 'final_bad'; setImage(6); setDialog('坏孩子……你没有心');
+      }
+      showReturnBox(); // 显示返回按钮
+    }
+    else if (phase === 'start') {
+      clickCount++;
+      updateProgress(clickCount, 15, '还需点击');
+      if (clickCount >= 15) {
+        phase = 'phase15'; setImage(2); setDialog('再点，我的脑袋就要坏了');
+        hideHint(); hideProgress();
+        clickCount = 0;
+      }
     }
   }
 
@@ -338,28 +330,27 @@
   btnGood.addEventListener('click', function () {
     choiceResult = 'good'; hideChoice(); phase = 'good_idle';
     setImage(6); setDialog('乖孩子……');
-    // 如果不点击，就保持这个状态
+    // 选了“好”之后，如果没有继续点击，显示返回键让用户能重置
+    showReturnBox();
   });
 
   btnBad.addEventListener('click', function () {
     choiceResult = 'bad'; hideChoice(); phase = 'bad_after'; afterClickCount = 0;
     setImage(8); setDialog('嗯……');
-    setTimeout(() => { if (phase === 'bad_after') { setImage(7); setDialog(''); } }, 400);
+    hideReturnBox(); // 选了“不好”后进入需要点击的分支，隐藏返回键
+    restoreTimer = setTimeout(() => {
+      if (phase === 'bad_after') { setImage(7); setDialog(''); }
+    }, 1500);
   });
 
   // ---------- 返回按钮事件 ----------
-  btnBackStart.addEventListener('click', function () {
-    resetToStart();
-  });
+  btnBackStart.addEventListener('click', resetToStart);
+  btnBackChoice.addEventListener('click', resetToChoice);
 
-  btnBackChoice.addEventListener('click', function () {
-    resetToChoice();
-  });
-
-  // ---------- 事件绑定：按下和松开 ----------
+  // ---------- 事件绑定 ----------
   character.addEventListener('pointerdown', handlePress);
   character.addEventListener('pointerup', handleRelease);
-  character.addEventListener('pointercancel', handleRelease); // 防止手指滑出屏幕导致状态卡住
+  character.addEventListener('pointercancel', handleRelease);
   character.addEventListener('contextmenu', function (e) { e.preventDefault(); });
 
   // 预加载 1-9 的所有图片
@@ -371,4 +362,4 @@
 })();
 </script>
 </body>
- </html>
+</html>
