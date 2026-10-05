@@ -14,7 +14,6 @@
     -webkit-tap-highlight-color: transparent;
     user-select: none;
     font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
-    /* 纯白背景 + 淡黄色狗爪印 */
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='%23f7e8b0' opacity='0.8'%3E%3Ccircle cx='60' cy='70' r='14'/%3E%3Ccircle cx='36' cy='46' r='9'/%3E%3Ccircle cx='60' cy='38' r='9'/%3E%3Ccircle cx='84' cy='46' r='9'/%3E%3C/g%3E%3C/svg%3E");
     background-size: 110px 110px;
     display: grid;
@@ -31,7 +30,6 @@
     transition: transform 0.15s ease, width 0.25s ease, height 0.25s ease;
   }
   
-  /* 2~9.jpg 放大显示 */
   #character.enlarged { width: min(78vw, 380px); height: min(78vw, 380px); }
   
   #character img {
@@ -39,13 +37,11 @@
     object-fit: contain; pointer-events: none; -webkit-user-drag: none;
   }
   
-  /* 点击缩放动画 */
   #character.clicked { animation: clickScale 0.2s ease; }
   @keyframes clickScale {
     0% { transform: scale(1); } 50% { transform: scale(0.88); } 100% { transform: scale(1); }
   }
 
-  /* 对话框 */
   #dialog {
     position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
     margin-bottom: 12px; padding: 10px 18px;
@@ -57,7 +53,6 @@
   }
   #dialog.hidden { display: none; }
 
-  /* 功德文字层 */
   #text-layer { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
   .merit-text {
     position: absolute; left: 50%; top: 15%; transform: translateX(-50%);
@@ -73,7 +68,6 @@
     100% { opacity: 0; transform: translate(-50%, -80px) scale(0.95); }
   }
 
-  /* 顶部提示 */
   #hint {
     position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
     font-size: 14px; color: #aaa; letter-spacing: 0.1em;
@@ -81,7 +75,6 @@
   }
   #hint.hidden { opacity: 0; }
 
-  /* 进度提示 */
   #progress {
     position: fixed; top: 50px; left: 50%; transform: translateX(-50%);
     font-size: 12px; color: #d4a017; letter-spacing: 0.05em;
@@ -89,7 +82,6 @@
   }
   #progress.show { opacity: 1; }
 
-  /* 选项按钮 */
   #choice {
     position: fixed; bottom: calc(80px + env(safe-area-inset-bottom, 0px));
     left: 50%; transform: translateX(-50%);
@@ -97,7 +89,6 @@
   }
   #choice.hidden { display: none; }
   
-  /* 结局/停滞状态的返回按钮 */
   #return-box {
     position: fixed; bottom: calc(80px + env(safe-area-inset-bottom, 0px));
     left: 50%; transform: translateX(-50%);
@@ -105,7 +96,6 @@
   }
   #return-box.hidden { display: none; }
 
-  /* 按钮通用样式 */
   #choice button, #return-box button {
     padding: 12px 24px; font-size: 15px; border: 2px solid #333;
     border-radius: 12px; background: #fff; color: #333; cursor: pointer;
@@ -159,8 +149,9 @@
   let choiceResult = '';
   let audioCtx = null;
   let restoreTimer = null;
+  let goodIdleTimer = null;
+  let skipCountOnce = false;
 
-  // 播放木鱼音效
   function initAudio() {
     if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
     if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
@@ -182,14 +173,12 @@
   }
   function vibrate() { if (navigator.vibrate) navigator.vibrate(40); }
 
-  // 设置图片
   function setImage(num) {
     mainImg.src = num + '.jpg';
     if (num >= 2 && num <= 9) character.classList.add('enlarged');
     else character.classList.remove('enlarged');
   }
 
-  // 设置对话框
   function setDialog(text) {
     if (text && text.trim() !== '') {
       dialog.textContent = text;
@@ -200,7 +189,6 @@
     }
   }
 
-  // 触发缩放动画
   function triggerScale() {
     character.classList.remove('clicked');
     void character.offsetWidth;
@@ -208,7 +196,6 @@
     setTimeout(() => character.classList.remove('clicked'), 200);
   }
 
-  // 显示功德+1
   function showMerit() {
     const el = document.createElement('div');
     el.className = 'merit-text'; el.textContent = '功德 +1';
@@ -230,39 +217,51 @@
   }
   function hideProgress() { progressEl.classList.remove('show'); }
 
-  // 重置到开始
   function resetToStart() {
     if (restoreTimer) clearTimeout(restoreTimer);
+    if (goodIdleTimer) clearTimeout(goodIdleTimer);
     phase = 'start'; clickCount = 0; afterClickCount = 0;
     setImage(1); setDialog('');
     hideChoice(); hideReturnBox(); hideProgress();
     showHint();
   }
 
-  // 重置到选择
   function resetToChoice() {
     if (restoreTimer) clearTimeout(restoreTimer);
+    if (goodIdleTimer) clearTimeout(goodIdleTimer);
     phase = 'choice'; clickCount = 0; afterClickCount = 0;
     setImage(6); setDialog('乖孩子，别点了');
     hideReturnBox(); showChoice(); hideProgress();
     hideHint();
   }
 
-  // ---------- 核心：按下（长按保持点击状态） ----------
+  // 处理按下
   function handlePress(e) {
     if (e) e.preventDefault();
-    if (phase === 'choice' || phase === 'final_good' || phase === 'final_bad') return;
+    // 结局和选择阶段不处理角色点击
+    if (phase === 'choice' || phase === 'final_good_good' || phase === 'final_good_bad' || phase === 'final_bad') return;
+
+    // 关键：在 good_idle 阶段（选了“好”但没点击），点击会打断8秒倒计时，进入 bad_after 分支
+    if (phase === 'good_idle') {
+      if (goodIdleTimer) clearTimeout(goodIdleTimer);
+      choiceResult = 'good';
+      phase = 'bad_after';
+      afterClickCount = 0;
+      setImage(8); setDialog('嗯……');
+      skipCountOnce = true; // 这次点击不计数
+      initAudio(); playWoodfish(); vibrate(); triggerScale(); showMerit();
+      return;
+    }
 
     if (restoreTimer) { clearTimeout(restoreTimer); restoreTimer = null; }
-
-    // 只要开始点击，就隐藏返回键
     hideReturnBox();
 
     initAudio(); playWoodfish(); vibrate(); triggerScale(); showMerit();
 
+    // 根据当前阶段设置“按下态”形象
     if (phase === 'phase15') {
       setImage(3); setDialog('怎么又点……');
-    } else if (phase === 'good_after' || phase === 'bad_after') {
+    } else if (phase === 'bad_after') {
       setImage(8); setDialog('嗯……');
     } else if (phase === 'phase25') {
       setImage(5);
@@ -271,51 +270,70 @@
     }
   }
 
-  // ---------- 核心：松开（恢复常态并推进剧情） ----------
+  // 处理松开
   function handleRelease(e) {
     if (e) e.preventDefault();
-    if (phase === 'choice' || phase === 'final_good' || phase === 'final_bad') return;
+    if (phase === 'choice' || phase === 'final_good_good' || phase === 'final_good_bad' || phase === 'final_bad') return;
 
-    // 松开后，延迟 1.5 秒恢复“不点击时的形象”
-    if (phase === 'phase15') {
-      restoreTimer = setTimeout(() => {
-        if (phase === 'phase15') { setImage(2); setDialog(''); }
-      }, 1500);
-      clickCount++;
-      updateProgress(clickCount, 10, '还需点击');
-      if (clickCount >= 10) {
-        phase = 'phase25'; setImage(4); setDialog('我的呆毛都乱了');
-        hideProgress(); clickCount = 0;
+    // 处理 bad_after 状态（包括“不好”分支和“好”分支点击后进入）
+    if (phase === 'bad_after') {
+      if (skipCountOnce) {
+        skipCountOnce = false;
+        restoreTimer = setTimeout(() => {
+          if (phase === 'bad_after') { setImage(7); setDialog(''); }
+        }, 1000);
+        return;
       }
-    } 
-    else if (phase === 'phase25') {
       restoreTimer = setTimeout(() => {
-        if (phase === 'phase25') {
-          setImage(6); setDialog('乖孩子，别点了');
-          showChoice(); phase = 'choice';
-        }
-      }, 1500);
-    }
-    else if (phase === 'good_after' || phase === 'bad_after') {
-      restoreTimer = setTimeout(() => {
-        if (phase === 'good_after' || phase === 'bad_after') { setImage(7); setDialog(''); }
-      }, 1500);
+        if (phase === 'bad_after') { setImage(7); setDialog(''); }
+      }, 1000);
       afterClickCount++;
       updateProgress(afterClickCount, 10, '还需点击');
       if (afterClickCount >= 10) {
         phase = 'after_10'; setImage(9); setDialog('诶……');
         hideProgress(); afterClickCount = 0;
       }
+      return;
     }
-    else if (phase === 'after_10') {
+
+    // 处理 after_10 状态，点击一下进入结局
+    if (phase === 'after_10') {
       if (choiceResult === 'good') {
-        phase = 'final_good'; setImage(6); setDialog('说话不算数……坏孩子……');
+        phase = 'final_good_bad'; setImage(6); setDialog('说话不算数……坏孩子……');
       } else if (choiceResult === 'bad') {
         phase = 'final_bad'; setImage(6); setDialog('坏孩子……你没有心');
       }
-      showReturnBox(); // 显示返回按钮
+      showReturnBox();
+      return;
     }
-    else if (phase === 'start') {
+
+    // 处理 phase15
+    if (phase === 'phase15') {
+      restoreTimer = setTimeout(() => {
+        if (phase === 'phase15') { setImage(2); setDialog(''); }
+      }, 1000);
+      clickCount++;
+      updateProgress(clickCount, 10, '还需点击');
+      if (clickCount >= 10) {
+        phase = 'phase25'; setImage(4); setDialog('我的呆毛都乱了');
+        hideProgress(); clickCount = 0;
+      }
+      return;
+    }
+
+    // 处理 phase25
+    if (phase === 'phase25') {
+      restoreTimer = setTimeout(() => {
+        if (phase === 'phase25') {
+          setImage(6); setDialog('乖孩子，别点了');
+          showChoice(); phase = 'choice';
+        }
+      }, 1000);
+      return;
+    }
+
+    // 处理 start
+    if (phase === 'start') {
       clickCount++;
       updateProgress(clickCount, 15, '还需点击');
       if (clickCount >= 15) {
@@ -323,37 +341,40 @@
         hideHint(); hideProgress();
         clickCount = 0;
       }
+      return;
     }
   }
 
-  // ---------- 选项按钮事件 ----------
+  // 选“好”
   btnGood.addEventListener('click', function () {
     choiceResult = 'good'; hideChoice(); phase = 'good_idle';
     setImage(6); setDialog('乖孩子……');
-    // 选了“好”之后，如果没有继续点击，显示返回键让用户能重置
-    showReturnBox();
+    goodIdleTimer = setTimeout(() => {
+      if (phase === 'good_idle') {
+        phase = 'final_good_good';
+        showReturnBox();
+      }
+    }, 8000);
   });
 
+  // 选“不好”
   btnBad.addEventListener('click', function () {
     choiceResult = 'bad'; hideChoice(); phase = 'bad_after'; afterClickCount = 0;
     setImage(8); setDialog('嗯……');
-    hideReturnBox(); // 选了“不好”后进入需要点击的分支，隐藏返回键
+    hideReturnBox();
     restoreTimer = setTimeout(() => {
       if (phase === 'bad_after') { setImage(7); setDialog(''); }
-    }, 1500);
+    }, 1000);
   });
 
-  // ---------- 返回按钮事件 ----------
   btnBackStart.addEventListener('click', resetToStart);
   btnBackChoice.addEventListener('click', resetToChoice);
 
-  // ---------- 事件绑定 ----------
   character.addEventListener('pointerdown', handlePress);
   character.addEventListener('pointerup', handleRelease);
   character.addEventListener('pointercancel', handleRelease);
   character.addEventListener('contextmenu', function (e) { e.preventDefault(); });
 
-  // 预加载 1-9 的所有图片
   for (let i = 1; i <= 9; i++) {
     const img = new Image();
     img.src = i + '.jpg';
@@ -362,4 +383,4 @@
 })();
 </script>
 </body>
-</html>
+ </html>
