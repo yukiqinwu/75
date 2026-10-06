@@ -55,7 +55,7 @@
 
   #text-layer { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
   .merit-text {
-    position: absolute; left: 50%; top: 15%; transform: translateX(-50%);
+    position: absolute; left: 50%; top: 30%; transform: translateX(-50%);
     font-size: 20px; font-weight: 700; color: #d4a017;
     text-shadow: 0 2px 6px rgba(255,255,255,0.9);
     white-space: nowrap; pointer-events: none;
@@ -235,20 +235,17 @@
     hideHint();
   }
 
-  // 处理按下
   function handlePress(e) {
     if (e) e.preventDefault();
-    // 结局和选择阶段不处理角色点击
     if (phase === 'choice' || phase === 'final_good_good' || phase === 'final_good_bad' || phase === 'final_bad') return;
 
-    // 关键：在 good_idle 阶段（选了“好”但没点击），点击会打断8秒倒计时，进入 bad_after 分支
     if (phase === 'good_idle') {
       if (goodIdleTimer) clearTimeout(goodIdleTimer);
       choiceResult = 'good';
       phase = 'bad_after';
       afterClickCount = 0;
       setImage(8); setDialog('嗯……');
-      skipCountOnce = true; // 这次点击不计数
+      skipCountOnce = true;
       initAudio(); playWoodfish(); vibrate(); triggerScale(); showMerit();
       return;
     }
@@ -258,7 +255,6 @@
 
     initAudio(); playWoodfish(); vibrate(); triggerScale(); showMerit();
 
-    // 根据当前阶段设置“按下态”形象
     if (phase === 'phase15') {
       setImage(3); setDialog('怎么又点……');
     } else if (phase === 'bad_after') {
@@ -270,12 +266,10 @@
     }
   }
 
-  // 处理松开
   function handleRelease(e) {
     if (e) e.preventDefault();
     if (phase === 'choice' || phase === 'final_good_good' || phase === 'final_good_bad' || phase === 'final_bad') return;
 
-    // 处理 bad_after 状态（包括“不好”分支和“好”分支点击后进入）
     if (phase === 'bad_after') {
       if (skipCountOnce) {
         skipCountOnce = false;
@@ -296,7 +290,6 @@
       return;
     }
 
-    // 处理 after_10 状态，点击一下进入结局
     if (phase === 'after_10') {
       if (choiceResult === 'good') {
         phase = 'final_good_bad'; setImage(6); setDialog('说话不算数……坏孩子……');
@@ -307,7 +300,6 @@
       return;
     }
 
-    // 处理 phase15
     if (phase === 'phase15') {
       restoreTimer = setTimeout(() => {
         if (phase === 'phase15') { setImage(2); setDialog(''); }
@@ -321,7 +313,6 @@
       return;
     }
 
-    // 处理 phase25
     if (phase === 'phase25') {
       restoreTimer = setTimeout(() => {
         if (phase === 'phase25') {
@@ -332,7 +323,6 @@
       return;
     }
 
-    // 处理 start
     if (phase === 'start') {
       clickCount++;
       updateProgress(clickCount, 15, '还需点击');
@@ -345,7 +335,6 @@
     }
   }
 
-  // 选“好”
   btnGood.addEventListener('click', function () {
     choiceResult = 'good'; hideChoice(); phase = 'good_idle';
     setImage(6); setDialog('乖孩子……');
@@ -357,7 +346,6 @@
     }, 8000);
   });
 
-  // 选“不好”
   btnBad.addEventListener('click', function () {
     choiceResult = 'bad'; hideChoice(); phase = 'bad_after'; afterClickCount = 0;
     setImage(8); setDialog('嗯……');
@@ -383,4 +371,4 @@
 })();
 </script>
 </body>
- </html>
+</html>
